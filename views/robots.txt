@@ -1,61 +1,16 @@
-User-agent: Googlebot
+User-agent: *
 Allow: /
-Allow: /?z
-Allow: /?faq
-Allow: /?y
-Allow: /?d
-Allow: /?g
-Allow: /?c
-Allow: /?in
 
-User-agent: Bingbot
-Allow: /
-Allow: /?z
-Allow: /?faq
-Allow: /?y
-Allow: /?d
-Allow: /?g
-Allow: /?c
-Allow: /?in
+User-agent: *
+Allow: /assets
 
-User-agent: Slurp
-Allow: /
-Allow: /?z
-Allow: /?faq
-Allow: /?y
-Allow: /?d
-Allow: /?g
-Allow: /?c
-Allow: /?in
+User-agent: *
+Allow: /assets/ico
 
-User-agent: DuckDuckBot
-Allow: /
-Allow: /?z
-Allow: /?faq
-Allow: /?y
-Allow: /?d
-Allow: /?g
-Allow: /?c
-Allow: /?in
+User-agent: *
+Disallow: /uv
 
-User-agent: Baiduspider
-Allow: /
-Allow: /?z
-Allow: /?faq
-Allow: /?y
-Allow: /?d
-Allow: /?g
-Allow: /?c
-Allow: /?in
-
-User-agent: YandexBot
-Allow: /
-Allow: /?z
-Allow: /?faq
-Allow: /?y
-Allow: /?d
-Allow: /?g
-Allow: /?c
-Allow: /?in
-
-Sitemap: https://holyunblockerlts.net/sitemap.xml
+User-agent: *
+Disallow: /github
+ 
+Sitemap: https://holyunblocker.org/sitemap.xml

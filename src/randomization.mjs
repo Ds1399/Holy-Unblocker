@@ -1,78 +1,99 @@
 import pkg from './routes.mjs';
-import { existsSync, readFileSync } from 'fs';
-const { cookingInserts, vegetables, charRandom, splashRandom, cacheBustList, text404 } = pkg;
-export { insertText, paintSource, tryReadFile };
+import { existsSync, readFileSync } from 'node:fs';
+export { config, paintSource, randomizeGlobal, preloaded404, tryReadFile };
+const {
+  cookingInserts,
+  vegetables,
+  charRandom,
+  splashRandom,
+  cacheBustList,
+  VersionValue,
+  text404,
+} = pkg;
 
-/*
-//  Try this instead of the .replace method. Might be more performant.
-//  Will edit str by replacing all matches of lis with newText.
-//  Usage: insertText(['<Example1>', '<Example2>'],
-//             '<Example1> Big Giant Paragraph <Example2> Smol Paragraph',
-//             stringOrFunctionToGenerateNewText);
-*/
-const insertText = (lis, str, newText) => {
-    let position;
-
-//  The lis argument should be a list of strings containing placeholders.
-//  Ensure lis is formatted as a list, and loop through each of the
-//  placeholder strings.
-    for (let placeholder of [].concat(lis)) {
-//      Find all matches of a placeholder string and insert new text there.
-        while ((position = str.indexOf(placeholder)) >= 0)
-            str = str.slice(0, position)
-                + (typeof newText == 'function' ? newText() : newText)
-                + str.slice(position + placeholder.length);
-    }
-    return str;
-};
-
-
-
-//  Below are lots of function definitions used to obfuscate the website.
-//  This makes the website harder to properly categorize, as its source code
-//  changes with each time it is loaded.
-const randomListItem = lis => () => lis[Math.random() * lis.length | 0],
-
-charset = ['&#173;', '&#8203;', '&shy;', '<wbr>'],
-getRandomChar = randomListItem(charRandom),
-insertCharset = str => insertText(
-    charset,
-    str,
-    getRandomChar
-),
-
-getRandomSplash = randomListItem(splashRandom),
-hutaoInsert = str => insertText(
-    '<!--HUTAOWOA-->',
-    str,
-    getRandomSplash
-),
-
-getCookingText = () => `<span style="display:none" data-fact="${randomListItem(vegetables)()}">${randomListItem(cookingInserts)()}</span>`,
-insertCooking = str => insertText(
-    '<!-- IMPORTANT-HUTAOCOOKINGINSERT-DONOTDELETE -->',
-    str,
-    getCookingText
-),
-
-//  This one isn't for obfuscation; it's just for dealing with cache issues.
-cacheBusting = str => {
+// For customizing source code transformation and more, see the config.json file.
+const config = Object.freeze(
+    JSON.parse(readFileSync(new URL('../config.json', import.meta.url)))
+  ),
+  /* Below are lots of function definitions used to obfuscate the website.
+   * This makes the website harder to properly categorize, as its source code
+   * changes with each time it is loaded.
+   */
+  randomListItem = (lis) => () => lis[(Math.random() * lis.length) | 0],
+  charset = /&#173;|&#8203;|&shy;|<wbr>/gi,
+  getRandomChar = randomListItem(charRandom),
+  insertCharset = (str) => str.replace(charset, getRandomChar),
+  getRandomSplash = randomListItem(splashRandom),
+  hutaoInsert = (str) => str.replaceAll('<!--HUTAOWOA-->', getRandomSplash),
+  versionInsert = (str) => str.replaceAll('<!-- VERSION -->', VersionValue),
+  getCookingText = () =>
+    `<span style="display:none" data-fact="${randomListItem(vegetables)()}">${randomListItem(cookingInserts)()}</span>`,
+  insertCooking = (str) =>
+    str.replaceAll(
+      '<!-- IMPORTANT-HUTAOCOOKINGINSERT-DONOTDELETE -->',
+      getCookingText
+    ),
+  encodingTable = (() => {
+    let yummyOneBytes = '';
+    for (let i = 0; i < 128; i++)
+      if (
+        JSON.stringify(JSON.stringify(String.fromCodePoint(i)).slice(1, -1))
+          .length < 6
+      )
+        yummyOneBytes += String.fromCodePoint(i);
+    return yummyOneBytes;
+  })(),
+  randomValue = crypto
+    .randomUUID()
+    .split('-')
+    .map((gibberish) => {
+      let randomNumber = parseInt(gibberish, 16),
+        output = '';
+      while (randomNumber >= encodingTable.length) {
+        output +=
+          encodingTable[Math.floor(randomNumber) % encodingTable.length];
+        randomNumber = randomNumber / encodingTable.length;
+      }
+      return output + Math.floor(randomNumber);
+    })
+    .join(''),
+  randomizeGlobal = config.randomizeIdentifiers
+    ? (file) =>
+        tryReadFile(file, import.meta.url).replace(
+          /(["'`])\{\{__uv\$config\}\}\1/g,
+          JSON.stringify(randomValue)
+        )
+    : (file) =>
+        tryReadFile(file, import.meta.url).replace(
+          /(["'`])\{\{__uv\$config\}\}\1/g,
+          JSON.stringify('__uv$config')
+        ),
+  // This one isn't for obfuscation; it's just for dealing with cache issues.
+  cacheBusting = (str) => {
     for (let item of Object.entries(cacheBustList))
-        str = insertText(item[0], str, item[1]);
+      str = str.replaceAll(item[0], item[1]);
     return str;
-},
-
-//  Applies the final obfuscation changes to an entire file.
-paintSource = str => insertCharset(hutaoInsert(insertCooking(cacheBusting(str)))),
-
-//  Grabs the text content of a file.
-tryReadFile = file => existsSync(file) ? readFileSync(file, 'utf8') : text404;
+  },
+  // Apply the final obfuscation changes to an entire file.
+  paintSource = (str) =>
+    insertCharset(hutaoInsert(versionInsert(insertCooking(cacheBusting(str))))),
+  // Use this instead of text404 for a preloaded error page.
+  preloaded404 = paintSource(text404),
+  // Grab the text content of a file. Uses the root directory if no base is supplied.
+  tryReadFile = (file, baseUrl = new URL('../', import.meta.url)) => {
+    file = new URL(file, baseUrl);
+    return existsSync(file)
+      ? readFileSync(
+          file,
+          /\.(?:ico|png|jpg|jpeg)$/.test(file) ? undefined : 'utf8'
+        )
+      : preloaded404;
+  };
 
 /*
-//  All of this is now old code.
-//  The newer versions of these functions are directly above.
-*/
-/*
+
+All of this is now old code.
+The newer versions of these functions are directly above.
 
 function randomListItem(lis) {
     return lis[Math.floor(Math.random() * lis.length)];

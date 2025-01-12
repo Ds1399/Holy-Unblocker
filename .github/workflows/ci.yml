@@ -1,4 +1,4 @@
-name: CI
+name: CI-Production
 
 on:
   push:
@@ -22,11 +22,19 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Build libraries
+        run: npm run build
+
+      - name: Allow AppArmor sandbox to work on Ubuntu
+        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+        # A safer option to fix sandboxes if Chrome is installed on a local client:
+        # echo -e "\nexport CHROME_DEVEL_SANDBOX=/opt/google/chrome/chrome-sandbox" >> ~/.bashrc
+
       - name: Start server
-        run: npm run start-test-server
+        run: npm run workflow-test
 
       - name: Test server response
-        run: npm run test-200
+        run: npm test
 
       - name: Stop server after testing
-        run: pkill node || true 
+        run: npm stop
